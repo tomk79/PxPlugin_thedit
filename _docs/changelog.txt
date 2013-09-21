@@ -1,0 +1,8 @@
+/**
+ * PxPlugin "thedit" 更新履歴
+ */
+
+■PxPlugin thedit 0.0.1a1 (2013/**/**)
+
+- 初版リリース。
+
