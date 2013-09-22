@@ -171,6 +171,10 @@ class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 			return '<p>レイアウトIDが指定されていません。</p>';
 		}
 
+		// ↓訳あって、編集対象のテーマを選択しなければならない。
+		$this->px->theme()->set_theme_id( $theme_obj->get_theme_id() );
+
+		// ↓編集画面を起動する。
 		$obj = $this->plugin_obj->factory_editor( $theme_obj, $layout_obj );
 		return $obj->execute();
 	}
