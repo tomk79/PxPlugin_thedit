@@ -1,7 +1,11 @@
 <?php
 
 /**
- * PX Plugin "thedit"
+ * PX Plugin "thedit" models/theme
+ * 
+ * テーマは、ウェブサイトのナビゲーションやトーン＆マナーなどの構造、スタイルを司る概念です。
+ * レイアウト(layout)の上位概念です。
+ * _PX/themes に設置されたディレクトリを単位として格納された一式を指します。
  */
 class pxplugin_thedit_models_theme{
 
@@ -27,6 +31,20 @@ class pxplugin_thedit_models_theme{
 		$class_name = $this->px->load_px_plugin_class('/thedit/models/layout.php');
 		$obj = new $class_name( $this->px, $layout_id, $this->plugin_obj, $this );
 		return $obj;
+	}
+
+	/**
+	 * factory: テーマオブジェクト
+	 *
+	 * Pickles Framework コアのthemeのインスタンスを生成します。
+	 */
+	public function factory_theme( $layout_id = null ){
+		$obj_target_theme = new px_cores_theme( $this->px );
+		$obj_target_theme->set_theme_id( $this->get_theme_id() );
+		if( strlen($layout_id) ){
+			$obj_target_theme->set_layout_id( $layout_id );
+		}
+		return $obj_target_theme;
 	}
 
 	/**

@@ -1,7 +1,14 @@
 <?php
 
 /**
- * PX Plugin "thedit"
+ * PX Plugin "thedit" models/layout
+ * 
+ * レイアウトは、テーマ(theme)の下位概念です。
+ * 1つのテーマにつき複数のレイアウトが所属しています。
+ * Pickles Frameworkの初期状態では、default, top, popup, plain, naked が定義されていますが、
+ * テーマの設計者は任意の名称で追加することができます。
+ * レイアウトの実態は、 _PX/themes/{$theme_id}/ に設置された、拡張子 *.html のファイルです。
+ * 規定のレイアウトは default です。
  */
 class pxplugin_thedit_models_layout{
 
