@@ -7,8 +7,7 @@ $this->load_px_class('/bases/pxcommand.php');
 class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 
 	private $command;
-
-	private $path_data_dir;
+	private $plugin_obj;
 
 	/**
 	 * コンストラクタ
@@ -18,8 +17,10 @@ class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 	public function __construct( $command , $px ){
 		parent::__construct( $command , $px );
 		$this->command = $this->get_command();
-		$this->path_data_dir = $this->px->get_conf('paths.px_dir').'_sys/ramdata/plugins/thedit/';
-		$this->start();
+		$this->plugin_obj = $this->px->get_plugin_object( 'thedit' );
+
+		print $this->html_template( $this->start() );
+		exit;
 	}
 
 
@@ -27,31 +28,14 @@ class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 	 * コンテンツ内へのリンク先を調整する。
 	 */
 	private function href( $linkto = null ){
-		if(is_null($linkto)){
-			return '?PX='.implode('.',$this->command);
-		}
-		if($linkto == ':'){
-			return '?PX=plugins.thedit';
-		}
-		$rtn = preg_replace('/^\:/','?PX=plugins.thedit.',$linkto);
-
-		$rtn = $this->px->theme()->href( $rtn );
-		return $rtn;
+		return $this->plugin_obj->href( $linkto );
 	}
 
 	/**
 	 * コンテンツ内へのリンクを生成する。
 	 */
 	private function mk_link( $linkto , $options = array() ){
-		if( !strlen($options['label']) ){
-			if( $this->local_sitemap[$linkto] ){
-				$options['label'] = $this->local_sitemap[$linkto]['title'];
-			}
-		}
-		$rtn = $this->href($linkto);
-
-		$rtn = $this->px->theme()->mk_link( $rtn , $options );
-		return $rtn;
+		return $this->plugin_obj->mk_link( $linkto , $options );
 	}
 
 	// ------------------------------------------------------------------------------------------------------------------
@@ -60,6 +44,11 @@ class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 	 * 処理の開始
 	 */
 	private function start(){
+		if( $this->command[2] == 'property' ){
+			return $this->page_theme_property();
+		}elseif( $this->command[2] == 'edit' ){
+			return $this->page_edit_theme();
+		}
 		return $this->page_homepage();
 	}
 
@@ -87,11 +76,13 @@ class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 			$src .= '<div class="unit">'."\n";
 			$src .= '<table class="def" style="width:100%;">'."\n";
 			$src .= '	<thead>'."\n";
-			$src .= '	<tr>'."\n";
-			$src .= '		<th>テーマID</th>'."\n";
-			$src .= '		<th>テーマが定義しているアウトライン名</th>'."\n";
-			$src .= '		<th>---</th>'."\n";
-			$src .= '	</tr>'."\n";
+			$src .= '		<tr>'."\n";
+			$src .= '			<th>テーマID</th>'."\n";
+			$src .= '			<th>テーマが定義しているアウトライン名</th>'."\n";
+			$src .= '			<th>---</th>'."\n";
+			$src .= '			<th>---</th>'."\n";
+			$src .= '			<th>---</th>'."\n";
+			$src .= '		</tr>'."\n";
 			$src .= '	</thead>'."\n";
 			foreach( $theme_id_list as $theme_id ){
 				$src .= '	<tr>'."\n";
@@ -111,15 +102,77 @@ class pxplugin_thedit_register_pxcommand extends px_bases_pxcommand{
 					$src .= '		<div>'.implode(', ', $outline_list).'</div>'."\n";
 				}
 				$src .= '		</td>'."\n";
-				$src .= '		<td class="center">'.($current_theme_id==$theme_id?'---':'<a href="?THEME='.t::h($theme_id).'">このテーマを適用する</a>').'</td>'."\n";
+				$src .= '		<td class="center">'.($current_theme_id==$theme_id?'適用中':'<a href="?THEME='.t::h($theme_id).'">適用する</a>').'</td>'."\n";
+				$src .= '		<td class="center"><a href="'.t::h( $this->href( ':property.'.$theme_id ) ).'">詳細を見る</a></td>'."\n";
+				$src .= '		<td class="center"><a href="'.t::h( $this->href( ':edit.'.$theme_id.'.default' ) ).'">編集する</a></td>'."\n";
 				$src .= '	</tr>'."\n";
 			}
 			$src .= '</table>'."\n";
 			$src .= '</div>'."\n";
 		}
 
-		print $this->html_template($src);
-		exit;
+		return $src;
+	}
+
+	/**
+	 * テーマの詳細画面する。
+	 */
+	private function page_theme_property(){
+		$theme_obj = $this->plugin_obj->factory_model_theme( $this->command[3] );
+		if( !strlen( $theme_obj->get_theme_id() ) ){
+			return '<p>テーマIDを指定してください。</p>';
+		}
+		if( !$theme_obj->is_theme_exists() ){
+			return '<p>テーマ『'.t::h( $theme_obj->get_theme_id() ).'』は未定義です。</p>';
+		}
+
+
+		$this->set_title('テーマ『'.$theme_obj->get_theme_id().'』');
+		$src = '';
+		$src .= '<div class="unit">'."\n";
+		$src .= '<table class="def" style="width:100%;">'."\n";
+		$src .= '	<tr>'."\n";
+		$src .= '		<th style="width:30%;">テーマID</th>'."\n";
+		$src .= '		<td style="width:70%;">'.t::h( $theme_obj->get_theme_id() ).'</td>'."\n";
+		$src .= '	</tr>'."\n";
+		$src .= '	<tr>'."\n";
+		$src .= '		<th style="width:30%;">レイアウトID</th>'."\n";
+		$src .= '		<td style="width:70%;">'."\n";
+		$layouts = $theme_obj->get_layout_list();
+		foreach( $layouts as $layout_id ){
+			$src .= '		'.t::h( $layout_id ).' <a href="'.t::h( $this->href(':edit.'.$theme_obj->get_theme_id().'.'.$layout_id) ).'">編集する</a><br />'."\n";
+		}
+		$src .= '		</td>'."\n";
+		$src .= '	</tr>'."\n";
+		$src .= '</table>'."\n";
+		$src .= '</div>'."\n";
+		$src .= '<form action="?" method="get">'."\n";
+		$src .= '	<p class="center"><input type="submit" value="defaultのレイアウトを編集する" /></p>'."\n";
+		$src .= '	<div><input type="hidden" name="PX" value="'.t::h( $this->command[0].'.'.$this->command[1].'.edit.'.$theme_obj->get_theme_id().'.default' ).'" /></div>'."\n";
+		$src .= '</form>'."\n";
+		return $src;
+	}
+
+
+	/**
+	 * テーマを編集する。
+	 */
+	private function page_edit_theme(){
+		$theme_obj = $this->plugin_obj->factory_model_theme( $this->command[3] );
+		if( !strlen( $theme_obj->get_theme_id() ) ){
+			return '<p>テーマIDを指定してください。</p>';
+		}
+		if( !$theme_obj->is_theme_exists() ){
+			return '<p>テーマ『'.t::h( $theme_obj->get_theme_id() ).'』は未定義です。</p>';
+		}
+
+		$layout_obj = $theme_obj->factory_model_layout( $this->command[4] );
+		if( !strlen( $layout_obj->get_layout_id() ) ){
+			return '<p>レイアウトIDが指定されていません。</p>';
+		}
+
+		$obj = $this->plugin_obj->factory_editor( $theme_obj, $layout_obj );
+		return $obj->execute();
 	}
 
 }
